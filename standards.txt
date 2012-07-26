@@ -1,0 +1,17 @@
+
+For all matrices A[ i ][ j ], i denotes the row, j denotes the column. All matrices have dimension m-by-n, where m is the number of 
+rows, and n is the number of columns. A[ i ] is the i-th row of the matrix.
+
+All vectors are column vectors in this program. This is to maintain
+consistency throughout algorithms and code. A set of vectors in C code is
+identical to a matrix--both are double-pointers to floating point numbers. In
+a set of matrices S, S[ i ] is the i-th vector in the set. S[ i ][ j ] is the
+j-th element of the i-th vector.
+
+All C code written should be ansi compliant. This ensures cross-compiler
+compatibility--different compilers have different requirements, and ANSI is the
+common denominator between all major compilers that C code is likely to be
+compiled in.
+
+All sound samples, when passed into C functions here, must be double precision
+values lying betwewen -1.0 and 1.0.
