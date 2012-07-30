@@ -15,7 +15,7 @@ int cmplxExp( double* zr, double* zi, double xr, double xi ) {
 
 /*
  * output:
- * 	matrix: the covariance matrix, which is always a Hermitian matrix
+ * 	matrix: the covariance matrix of the data set, which is always a Hermitian matrix
  *
  * input:
  *	vector: the set of vectors for which the covariance will be found
@@ -54,6 +54,16 @@ int covariance( double** matrix, const double** vector, int m, int n ) {
 	free( mean );
 }
 
+/* Pre-emphasis of a sound clip. Doing this compensates for the 6 decibel roll-off of the power spectrum, resulting in more clear
+ * Convolves the sound clip with the the digital filter: [1,-0.97].
+ *
+ * inputs:
+ *	input: the sound clip
+ *	size:  the number of samples in the sound clip
+ *
+ * outputs:
+ *	result: the resulting, pre-emphasized sound clip
+ */
 int preemp( double* result, const double* input, int size ) {
 	int i;
 	result = realloc( result, sizeof( double ) * size + 1 );
@@ -68,6 +78,15 @@ int preemp( double* result, const double* input, int size ) {
 	}
 }
 
+/* Brackets a portion of a sound clip using a Hamming window.
+ *
+ * inputs:
+ *	data: the sound clip
+ *	m:    the starting point of the bracket
+ *	n:    the length of the bracket
+ * outputs:
+ *	segment: the resulting sound segment
+ */
 int hmwindow( double* segment, const double* data, int m, int n, int size ) {
 	int retval = 0;
 	assert( m + n < size );
@@ -83,6 +102,18 @@ int hmwindow( double* segment, const double* data, int m, int n, int size ) {
 	return retval;
 }
 
+/* Fast Fourier transform, using the Tukey-Cooley algorithm.
+ *
+ * inputs:
+ *	xr:   real input vector
+ *	xi:   imaginary input vector
+ *	samples: number of samples in the clip
+ *
+ * outputs:
+ *	real: real output vector
+ *	imag: imaginary output vector
+ *
+ */
 int fft( double* real, double* imag, const double* xr, const double* xi, int samples ) {
 	int result;
 	if( samples <= 1 ) {
