@@ -1,6 +1,9 @@
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 /*computes the complex exponential of a complex number.*/
 int cmplxExp( double* zr, double* zi, double xr, double xi ) {
@@ -48,12 +51,12 @@ int covariance( double** matrix, const double** vector, int m, int n ) {
 			}
 		}
 	}
-	
+	free( mean );
 }
 
 int preemp( double* result, const double* input, int size ) {
 	int i;
-	result = ( double* )malloc( sizeof( double ) * size + 1 );
+	result = realloc( result, sizeof( double ) * size + 1 );
 	for( i = 0; i < size + 1; i++ ) {
 		if( i == 0 ) {
 			result[ i ] = input[ i ];
@@ -80,34 +83,101 @@ int hmwindow( double* segment, const double* data, int m, int n, int size ) {
 	return retval;
 }
 
-int fft( double* real, double* imag, const double* x, int samples ) {
+int fft( double* real, double* imag, const double* xr, const double* xi, int samples ) {
 	int result;
 	if( samples <= 1 ) {
-		real = 
+
+		/*base case. Fourier transform of a single sample is itself*/
+		memcpy( real, xr, samples );
+		memcpy( imag, xi, samples );
 	} else {
-		double* evenSamples;
-		double* oddSamples;
+
+		/*declare variables*/
+		double* evenSamplesr;
+		double* evenSamplesi;
+		double* oddSamplesr;
+		double* oddSamplesi;
+		double* evenResultsr;
+		double* evenResultsi;
+		double* oddResultsr;
+		double* oddResultsi;
 		int numEvenSamples;
 		int i;
+
+		/*split the samples into even and odd indexed elements*/
 		if( samples % 2 == 0 ) {
 			numEvenSamples = samples / 2;
 		} else {
 			numEvenSamples = samples / 2 + 1;
 		}
-		evenSamples = ( double* )malloc( sizeof( double ) * numEvenSamples );
-		oddSamples = ( double* )malloc( sizeof( double ) * samples / 2 );
+		evenSamplesr = ( double* )malloc( sizeof( double ) * numEvenSamples );
+		evenSamplesi = ( double* )malloc( sizeof( double ) * numEvenSamples );
+		oddSamplesr = ( double* )malloc( sizeof( double ) * samples / 2 );
+		oddSamplesi = ( double* )malloc( sizeof( double ) * samples / 2 );
 		for( i = 0; i < samples; i++ ) {
-			
+			if( i % 2 == 0 ) {
+				evenSamplesr[ i / 2 ] = xr[ i ];
+				evenSamplesi[ i / 2 ] = xi[ i ];
+			} else {
+				oddSamplesr[ i / 2 ] = xr[ i ];
+				oddSamplesi[ i / 2 ] = xi[ i ];
+			}
 		}
+
+		/*take the Fourier transform of each set*/
+		evenResultsr = ( double* )malloc( sizeof( double ) * numEvenSamples );
+		evenResultsi = ( double* )malloc( sizeof( double ) * numEvenSamples );
+		oddResultsr = ( double* )malloc( sizeof( double ) * samples / 2 );
+		oddResultsi = ( double* )malloc( sizeof( double ) * samples / 2 );
+		fft( evenResultsr, evenResultsi, evenSamplesr, evenSamplesi, samples / 2 );
+		fft( oddResultsr, oddResultsi, oddSamplesr, oddSamplesi, samples / 2 );
+
+		/*compute the real and imaginary results*/
+		real = realloc( real, sizeof( double ) * samples );
+		imag = realloc( imag, sizeof( double ) * samples );
+		for( i = 0; i < samples; i++ ) {
+			double zr;
+			double zi;
+			int k;
+			cmplxExp( &zr, &zi, 0, -2 * M_PI * k / samples );
+			if( i < samples / 2 ) {
+				k = i;
+				real[ i ] = evenSamplesr[ k ] + zr * oddSamplesr[ k ] - zi * oddSamplesi[ k ];
+				imag[ i ] = evenSamplesi[ k ] + zr * oddSamplesi[ k ] + zi * oddSamplesr[ k ];
+			} else {
+				k = i % ( samples / 2 );
+				real[ i ] = evenSamplesr[ k ] - zr * oddSamplesr[ k ] + zi * oddSamplesr[ k ];
+				imag[ i ] = evenSamplesr[ k ] - zr * oddSamplesr[ k ] - zi * oddSamplesr[ k ];
+			}
+		}
+		free( evenSamplesr );
+		free( evenSamplesi );
+		free( oddSamplesr );
+		free( oddSamplesi );
+		free( evenResultsr );
+		free( evenResultsi );
+		free( oddResultsr );
+		free( oddResultsi );
 	}
 	return 0;
 }
 
 int main( int argc, char* argv[] ) {
+
+	/*unit test for complex exponential*/
 	double zr;
 	double zi;
+	clock_t start = clock() / ( CLOCKS_PER_SEC / 1000 );
+	cmplxExp( &zr, &zi, 0, M_PI );
+	printf( "exp( 1i*pi ) = %lf + i%lf\n", zr, zi );
 	cmplxExp( &zr, &zi, 1, M_PI );
-	printf( "exp( 1 + 1*pi ) = %lf + i%lf\n", zr, zi );
+	printf( "exp( 1 + 1i*pi ) = %lf + i%lf\n", zr, zi );
+	cmplxExp( &zr, &zi, 0, 0 );
+	printf( "exp( 0 ) = %lf + i%lf\n", zr, zi );
+	clock_t end = clock(); 
+	printf( "took %d to compute complex exponential\n", ( start ) );
+
+	/*unit test for covariance*/
 	double* v1 = ( double* )malloc( sizeof( double ) * 3 );
 	double* v2 = ( double* )malloc( sizeof( double ) * 3 );
 	double* v3 = ( double* )malloc( sizeof( double ) * 3 );
@@ -151,6 +221,30 @@ int main( int argc, char* argv[] ) {
 			printf( "%lf ", C[ i ][ j ] );
 		}
 		printf( "]\n" );
+	}
+	free( vv );
+	for( i = 0; i < 3; i++ ) {
+		free( C[ i ] );
+	}
+	free( C );
+	free( v5 );
+	free( v4 );
+	free( v3 );
+	free( v2 );
+	free( v1 );
+
+	/*Unit test for pre-emphasis*/
+	double* clip = ( double* )malloc( sizeof( double ) * 1103 );
+	double* result = ( double* )malloc( sizeof( double ) * 1104 );
+	srand( time( 0 ) );
+	for( i = 0; i < 1103; i++ ) {
+		clip[ i ] = 2 * ( ( double )rand() / ( double )RAND_MAX ) - 1;
+		printf( "clip[ %d ] = %lf\n", i, clip[ i ] );
+	}
+	preemp( result, clip, 1103 );
+	printf( "results:\n" );
+	for( i = 0; i < 1104; i++ ) {
+		printf( "result[ %d ] = %lf\n", i, result[ i ] );
 	}
 	return 0;
 }
