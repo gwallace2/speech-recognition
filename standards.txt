@@ -15,3 +15,6 @@ compiled in.
 
 All sound samples, when passed into C functions here, must be double precision
 values lying betwewen -1.0 and 1.0.
+
+In the feature vector of a frame of speech (or whatever the sound may be), the
+signal energy is the final component of the vector.

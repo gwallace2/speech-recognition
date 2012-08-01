@@ -193,6 +193,39 @@ int fft( double* real, double* imag, const double* xr, const double* xi, int sam
 	return 0;
 }
 
+/*
+ * Get the mel frequency from a given linear frequency.
+ *
+ * input:
+ *	freq: linear frequency
+ *
+ * returns:
+ *	the mel frequency
+ */
+double getMelFreq( double freq ) {
+	return 2595 * log10( 1 + freq / 700 );
+}
+
+/*
+ * Compute the total energy of the signal. This is a simple task, as it just
+ * involves taking the sum of the square of all samples.
+ *
+ * inputs:
+ *	signal: the signal in question
+ *	numSamples: the number of samples in the signal
+ *
+ * returns:
+ *	the energy
+ */
+double energy( const double* signal, int numSamples ) {
+	int i;
+	double result = 0.0;
+	for( i = 0; i < numSamples; i++ ) {
+		result = signal[ i ] * signal[ i ];
+	}
+	return result;
+}
+
 int main( int argc, char* argv[] ) {
 
 	/*unit test for complex exponential*/
